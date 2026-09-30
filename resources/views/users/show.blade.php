@@ -1,0 +1,142 @@
+<x-app-layout>
+    <x-slot name="header">
+        <div class="flex flex-col gap-1">
+            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                Detail User
+            </h2>
+            <p class="text-sm text-gray-500">
+                Informasi lengkap akun user.
+            </p>
+        </div>
+    </x-slot>
+
+    <div class="py-6">
+        <div class="max-w-4xl mx-auto sm:px-6 lg:px-8 space-y-4">
+
+            {{-- ✅ ACTION BUTTONS (di atas card, bukan header) --}}
+            <div class="flex items-center justify-end gap-2">
+                <a href="{{ route('users.index') }}"
+                   class="inline-flex items-center px-4 py-2 bg-white border border-gray-200 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-50">
+                    Kembali
+                </a>
+
+                <a href="{{ route('users.edit', $user) }}"
+                   class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700">
+                    Edit
+                </a>
+
+                <form id="deleteForm" method="POST" action="{{ route('users.destroy', $user) }}">
+                    @csrf
+                    @method('DELETE')
+                    <button type="button"
+                            onclick="confirmDelete()"
+                            class="inline-flex items-center px-4 py-2 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-700">
+                        Hapus
+                    </button>
+                </form>
+            </div>
+
+            {{-- Card: Info --}}
+            <div class="bg-white p-6 sm:p-8 shadow sm:rounded-lg">
+                <div class="flex items-start justify-between gap-6">
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-900">{{ $user->name }}</h3>
+                        <p class="text-sm text-gray-600 mt-1">{{ $user->email }}</p>
+                    </div>
+
+                    @php
+                        $statusClass = match($user->status) {
+                            'active'    => 'bg-green-50 text-green-700 border-green-200',
+                            'pending'   => 'bg-yellow-50 text-yellow-700 border-yellow-200',
+                            'rejected'  => 'bg-red-50 text-red-700 border-red-200',
+                            'suspended' => 'bg-gray-100 text-gray-700 border-gray-200',
+                            default     => 'bg-gray-50 text-gray-700 border-gray-200',
+                        };
+
+                        $kedudukanLabel = match($user->kedudukan) {
+                            'dpp_inti'     => 'DPP Harian',
+                            'bgkp'         => 'BGKP',
+                            'lingkungan'   => 'Lingkungan',
+                            'sekretariat'  => 'Sekretariat',
+                            default        => '-',
+                        };
+                    @endphp
+
+                    <div class="text-right space-y-2">
+                        <span class="inline-flex items-center px-3 py-1 text-xs rounded-full font-semibold border {{ $statusClass }}">
+                            {{ ucfirst($user->status) }}
+                        </span>
+
+                        <div class="text-xs text-gray-500">
+                            Kedudukan: <span class="font-semibold text-gray-700">{{ $kedudukanLabel }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border-t my-6"></div>
+
+                <dl class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Jabatan</dt>
+                        <dd class="mt-1 text-sm text-gray-900">{{ $user->jabatan_label }}</dd>
+                    </div>
+
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Role (Spatie)</dt>
+                        <dd class="mt-1 text-sm text-gray-900">
+                            @php
+                                $roles = $user->roles->pluck('name')
+                                    ->map(fn($r) => str_replace('_',' ', $r))
+                                    ->map('ucwords');
+                            @endphp
+                            {{ $roles->isEmpty() ? '-' : $roles->join(', ') }}
+                        </dd>
+                    </div>
+
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Bidang</dt>
+                        <dd class="mt-1 text-sm text-gray-900">
+                            {{ $user->bidang?->nama_bidang ?? '-' }}
+                        </dd>
+                    </div>
+
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Sie</dt>
+                        <dd class="mt-1 text-sm text-gray-900">
+                            {{ $user->sie?->nama_sie ?? '-' }}
+                        </dd>
+                    </div>
+
+                    @if ($user->status === 'rejected' && $user->alasan_ditolak)
+                        <div class="sm:col-span-2">
+                            <dt class="text-sm font-medium text-red-600">Alasan Ditolak</dt>
+                            <dd class="mt-2 text-sm text-gray-900 whitespace-pre-line bg-red-50 border border-red-200 rounded-md p-4">
+                                {{ $user->alasan_ditolak }}
+                            </dd>
+                        </div>
+                    @endif
+                </dl>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        function confirmDelete() {
+            Swal.fire({
+                title: "Yakin ingin menghapus akun ini?",
+                text: "Akun akan di-soft delete (hilang dari UI).",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#dc2626",
+                cancelButtonColor: "#6b7280",
+                confirmButtonText: "Ya, hapus!",
+                cancelButtonText: "Batal"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('deleteForm').submit();
+                }
+            });
+        }
+    </script>
+</x-app-layout>
